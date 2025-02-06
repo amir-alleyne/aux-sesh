@@ -1,0 +1,14 @@
+# .gitignore at project root
+
+# Go
+/backend/*.exe
+/backend/*.log
+/backend/vendor/
+backend/go.sum
+
+# Node
+/frontend/node_modules/
+frontend/build/
+
+# OS files
+.DS_Store

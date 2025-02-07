@@ -15,7 +15,7 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	_, err = auth.GetAdmin()
+	_, err = auth.SetAuth()
 	if err != nil {
 		log.Fatal(err)
 	}

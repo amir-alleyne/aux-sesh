@@ -3,16 +3,19 @@ package middleware
 import (
 	"fmt"
 
+	"github.com/amir-alleyne/aux-sesh/backend/api/auth"
 	"github.com/labstack/echo/v4"
 	"github.com/zmb3/spotify"
 )
 
-// func SpotifyUserMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-// 	return func(c echo.Context) error {
-// 		c.Set("user", auth.AdminClient)
-// 		return next(c)
-// 	}
-// }
+func SpotifyUserMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		if auth.AdminClient != nil {
+			c.Set("user", auth.AdminClient)
+		}
+		return next(c)
+	}
+}
 
 func GetUserFromContext(c echo.Context) (*spotify.PrivateUser, error) {
 	// TODO : fix error when user is nil (occurs when user is not authenticated)

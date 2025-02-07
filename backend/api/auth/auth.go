@@ -29,7 +29,21 @@ type User struct {
 	Email string
 }
 
-func GetAdmin() (string, error) {
+func GetAdmin() (*spotify.PrivateUser, error) {
+	AdminClientLock.RLock()
+	defer AdminClientLock.RUnlock()
+
+	if AdminClient == nil {
+		return nil, fmt.Errorf("admin client not set")
+	}
+	spotifyUser, err := (*AdminClient).CurrentUser()
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get user: %v", err)
+	}
+	return spotifyUser, nil
+}
+
+func SetAuth() (string, error) {
 	clientID := os.Getenv("SPOTIFY_CLIENT_ID")
 	clientSecret := os.Getenv("SPOTIFY_CLIENT_SECRET")
 
@@ -50,17 +64,11 @@ func Callback(c echo.Context) error {
 	}
 
 	client := Auth.NewClient(token)
-	user, err := client.CurrentUser()
-	if err != nil {
-		errorMessage := fmt.Sprintf("Couldn't fetch user: %v", err)
-		return c.JSON(http.StatusInternalServerError, errorMessage)
-	}
-	fmt.Println("Logged in as:", user.Email)
-	c.Set("user", user)
 
 	AdminClientLock.Lock()
 	AdminClient = &client
 	AdminClientLock.Unlock()
+
 	return c.JSON(http.StatusOK, "Admin login completed! You can now use playback features.")
 }
 

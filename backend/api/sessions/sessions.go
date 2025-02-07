@@ -7,7 +7,6 @@ import (
 	unix "time"
 
 	"github.com/amir-alleyne/aux-sesh/backend/api/auth"
-	"github.com/amir-alleyne/aux-sesh/backend/middleware"
 	"github.com/labstack/echo/v4"
 	"github.com/zmb3/spotify"
 )
@@ -29,7 +28,7 @@ CreateSession is a handler function that creates a new session.
 It should add the current user to the session and return a session ID.
 */
 func CreateSession(c echo.Context) error {
-	userClient, err := middleware.GetUserFromContext(c)
+	userClient, err := auth.GetAdmin()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}

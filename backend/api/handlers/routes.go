@@ -13,5 +13,6 @@ func RegisterRoutes(e *echo.Echo) {
 	e.GET("/create-session", sessions.CreateSession)
 	e.GET("/end-session", sessions.EndSession)
 	e.GET("/join-session", sessions.JoinSession)
+	e.GET("/get-sessions", sessions.GetSessions)
 	e.GET("/play-song", sessions.PlaySong)
 }

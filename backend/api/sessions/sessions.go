@@ -3,9 +3,11 @@ package sessions
 import (
 	"fmt"
 	"net/http"
+	"sync"
 	unix "time"
 
 	"github.com/amir-alleyne/aux-sesh/backend/api/auth"
+	"github.com/amir-alleyne/aux-sesh/backend/middleware"
 	"github.com/labstack/echo/v4"
 	"github.com/zmb3/spotify"
 )
@@ -17,23 +19,39 @@ type Session struct {
 	SongQueue []spotify.URI
 }
 
+var (
+	Sessions     = make(map[int]Session)
+	SessionsLock sync.Mutex
+)
+
 /*
 CreateSession is a handler function that creates a new session.
 It should add the current user to the session and return a session ID.
 */
 func CreateSession(c echo.Context) error {
-	user := c.Get("user").(*spotify.PrivateUser)
-	if user == nil {
-		return c.JSON(http.StatusUnauthorized, "User not authenticated")
+	userClient, err := middleware.GetUserFromContext(c)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
+	SessionsLock.Lock()
+	defer SessionsLock.Unlock()
+
+	if len(Sessions) > 10 {
+		return c.JSON(http.StatusTooManyRequests, "Too many sessions")
+	}
+	time := unix.Now().Nanosecond()
+
+	if _, ok := Sessions[time]; ok {
+		return c.JSON(http.StatusInternalServerError, "Session with the same ID already exists")
+	}
 	session := Session{
-		ID:      unix.Now().Nanosecond(),
-		AdminID: user.Email,
-		UserIDs: []string{user.Email},
+		ID:      time,
+		AdminID: userClient.Email,
+		UserIDs: []string{userClient.Email},
 	}
 	fmt.Println("Session created with ID:", session.ID)
-
+	Sessions[time] = session
 	return c.JSON(http.StatusOK, "Session created")
 }
 
@@ -43,6 +61,17 @@ func EndSession(c echo.Context) error {
 
 func JoinSession(c echo.Context) error {
 	return nil
+}
+
+func GetSessions(c echo.Context) error {
+	sessions := make([]Session, 0)
+	SessionsLock.Lock()
+	defer SessionsLock.Unlock()
+	for _, session := range Sessions {
+		sessions = append(sessions, session)
+
+	}
+	return c.JSON(http.StatusOK, sessions)
 }
 
 func PlaySong(c echo.Context) error {

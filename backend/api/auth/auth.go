@@ -16,8 +16,8 @@ var (
 	// Change the redirect URI if needed.
 	redirectURI = "http://localhost:8080/auth-callback"
 	// Scopes required to control playback.
-	auth  = spotify.NewAuthenticator(redirectURI, spotify.ScopeUserReadPlaybackState, spotify.ScopeUserModifyPlaybackState)
-	state = "some-random-string" // In production, generate a secure, random state value.
+	Auth  = spotify.NewAuthenticator(redirectURI, spotify.ScopeUserReadPlaybackState, spotify.ScopeUserReadPrivate, spotify.ScopeUserReadEmail, spotify.ScopeUserModifyPlaybackState)
+	State = "some-random-string" // In production, generate a secure, random state value.
 
 	// In-memory storage for the admin’s Spotify client.
 	AdminClient     *spotify.Client
@@ -37,21 +37,27 @@ func GetAdmin() (string, error) {
 		log.Fatal("Please set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET environment variables.")
 		return "", fmt.Errorf("Please set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET environment variables.")
 	}
-	auth.SetAuthInfo(clientID, clientSecret)
+	Auth.SetAuthInfo(clientID, clientSecret)
 
 	return clientID, nil
 }
 
 func Callback(c echo.Context) error {
-	token, err := auth.Token(state, c.Request())
-	fmt.Print("here")
-	log.Info("Token: ", token)
+	token, err := Auth.Token(State, c.Request())
 	if err != nil {
 		errorMessage := fmt.Sprintf("Couldn't get token: %v", err)
 		return c.JSON(http.StatusForbidden, errorMessage)
 	}
 
-	client := auth.NewClient(token)
+	client := Auth.NewClient(token)
+	user, err := client.CurrentUser()
+	if err != nil {
+		errorMessage := fmt.Sprintf("Couldn't fetch user: %v", err)
+		return c.JSON(http.StatusInternalServerError, errorMessage)
+	}
+	fmt.Println("Logged in as:", user.Email)
+	c.Set("user", user)
+
 	AdminClientLock.Lock()
 	AdminClient = &client
 	AdminClientLock.Unlock()
@@ -60,7 +66,7 @@ func Callback(c echo.Context) error {
 
 // run server
 func SignIn(c echo.Context) error {
-	url := auth.AuthURL(state)
+	url := Auth.AuthURL(State)
 	c.Redirect(http.StatusFound, url)
 	return nil
 }

@@ -22,6 +22,7 @@ func main() {
 	e := echo.New()
 
 	//TODO : Add middleware to check if the user is authenticated
+	// e.Use(middleware.SpotifyUserMiddleware)
 
 	// Register the routes
 	handlers.RegisterRoutes(e)

@@ -73,7 +73,13 @@ func Callback(c echo.Context) error {
 }
 
 // run server
-func SignIn(c echo.Context) error {
+func ClerkSignIn(c echo.Context) error {
+	url := Auth.AuthURL(State)
+	c.Redirect(http.StatusFound, url)
+	return nil
+}
+
+func SpotifySignIn(c echo.Context) error {
 	url := Auth.AuthURL(State)
 	c.Redirect(http.StatusFound, url)
 	return nil

@@ -1,5 +1,6 @@
 
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react";
+import Home from "./pages/Home";
 
 export default function App() {
   return (
@@ -8,7 +9,7 @@ export default function App() {
         <SignInButton />
       </SignedOut>
       <SignedIn>
-        <UserButton />
+       <Home/>
       </SignedIn>
     </header>
   );

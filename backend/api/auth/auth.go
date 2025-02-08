@@ -69,7 +69,7 @@ func Callback(c echo.Context) error {
 	AdminClient = &client
 	AdminClientLock.Unlock()
 
-	return c.JSON(http.StatusOK, "Admin login completed! You can now use playback features.")
+	return c.JSON(http.StatusOK, true)
 }
 
 // run server

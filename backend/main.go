@@ -6,6 +6,8 @@ import (
 
 	"github.com/amir-alleyne/aux-sesh/backend/api/auth"
 	"github.com/amir-alleyne/aux-sesh/backend/middleware"
+	echoMiddleware "github.com/labstack/echo/v4/middleware"
+
 	"github.com/joho/godotenv"
 
 	"github.com/clerk/clerk-sdk-go/v2"
@@ -26,6 +28,10 @@ func main() {
 	}
 
 	e := echo.New()
+	e.Use(echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
+		AllowOrigins: []string{"http://localhost:5173"},
+		AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},
+	}))
 
 	middleware.RegisterRoutes(e)
 

@@ -6,15 +6,16 @@ export interface SessionData {
   }
   
   export interface CreateSessionResponse {
-    sessionId: string;
-    // Include other response properties as needed
+    ID: string;
+    AdminID: string;
+    UserIDs: string[];
+    SongQueue: string[];
   }
   
-  export async function createSession(sessionData: SessionData): Promise<CreateSessionResponse> {
+  export async function createSession(): Promise<CreateSessionResponse> {
     const response = await fetch(`${BACKEND_BASE_URL}/create-session`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(sessionData),
     });
   
     if (!response.ok) {

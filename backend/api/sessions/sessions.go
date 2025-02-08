@@ -51,7 +51,7 @@ func CreateSession(c echo.Context) error {
 	}
 	fmt.Println("Session created with ID:", session.ID)
 	Sessions[time] = session
-	return c.JSON(http.StatusOK, "Session created")
+	return c.JSON(http.StatusOK, session)
 }
 
 func EndSession(c echo.Context) error {

@@ -60,7 +60,26 @@ func Callback(c echo.Context) error {
 	token, err := Auth.Token(State, c.Request())
 	if err != nil {
 		errorMessage := fmt.Sprintf("Couldn't get token: %v", err)
-		return c.JSON(http.StatusForbidden, errorMessage)
+		htmlContent := fmt.Sprintf(`
+          <html>
+            <head>
+              <script type="text/javascript">
+                window.onload = function() {
+                  window.opener.postMessage({
+                    type: 'spotify-auth-callback',
+                    isSignedIn: false,
+                    error: %q
+                  }, window.location.origin);
+                  window.close();
+                };
+              </script>
+            </head>
+            <body>
+              Authentication failed. Please close this window.
+            </body>
+          </html>
+        `, errorMessage)
+		return c.HTML(http.StatusForbidden, htmlContent)
 	}
 
 	client := Auth.NewClient(token)
@@ -69,7 +88,25 @@ func Callback(c echo.Context) error {
 	AdminClient = &client
 	AdminClientLock.Unlock()
 
-	return c.JSON(http.StatusOK, true)
+	htmlContent := `
+      <html>
+        <head>
+          <script type="text/javascript">
+            window.onload = function() {
+              window.opener.postMessage({
+                type: 'spotify-auth-callback',
+                isSignedIn: true
+              }, window.location.origin);
+              window.close();
+            };
+          </script>
+        </head>
+        <body>
+          Successfully authenticated. Please close this window and return to the application.
+        </body>
+      </html>
+    `
+	return c.HTML(http.StatusOK, htmlContent)
 }
 
 // run server

@@ -33,15 +33,44 @@
       throw new Error('Failed to open popup window');
     }
   
-    // Return a promise that resolves when the popup is closed
-    return new Promise<SpotifySignInResponse>((resolve, reject) => {
-      const pollTimer = window.setInterval(() => {
-        if (popup.closed) {
-          window.clearInterval(pollTimer);
-          // In a real app you would handle the actual auth response here.
-          // For now, we simulate a successful sign-in.
+    
+  return new Promise<SpotifySignInResponse>((resolve, reject) => {
+    let resolved = false;
+
+    // Listen for the message from the backend callback page.
+    const messageHandler = (event: MessageEvent) => {
+      // Verify that the message is coming from the expected origin
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+      const data = event.data;
+      if (data && data.type === 'spotify-auth-callback') {
+        resolved = true;
+        window.removeEventListener('message', messageHandler);
+        clearInterval(pollTimer);
+
+        // Resolve based on the response from your backend
+       if (data.isSignedIn) {
           resolve({ isSignedIn: true });
+        } else {
+          resolve({ isSignedIn: false });
         }
-      }, 500);
-    });
+
+        if (!popup.closed) {
+          popup.close();
+        }
+      }
+    };
+
+    window.addEventListener('message', messageHandler);
+
+    // Poll for popup closure: if the user manually closes the popup before authentication completes
+    const pollTimer = window.setInterval(() => {
+      if (popup.closed && !resolved) {
+        window.removeEventListener('message', messageHandler);
+        clearInterval(pollTimer);
+        resolve({ isSignedIn: false });
+      }
+    }, 500);
+  });
   }

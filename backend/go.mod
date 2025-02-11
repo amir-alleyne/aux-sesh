@@ -25,6 +25,7 @@ require (
 
 require (
 	github.com/clerk/clerk-sdk-go/v2 v2.2.0
+	github.com/clerkinc/clerk-sdk-go v1.49.1
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/echo/v4 v4.13.3

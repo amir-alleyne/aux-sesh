@@ -1,57 +1,19 @@
 package sessions
 
 import (
-	"fmt"
 	"net/http"
-	"sync"
-	unix "time"
 
-	"github.com/amir-alleyne/aux-sesh/backend/api/auth"
 	"github.com/labstack/echo/v4"
-	"github.com/zmb3/spotify"
-)
-
-type Session struct {
-	ID        int
-	AdminID   string
-	UserIDs   []string
-	SongQueue []spotify.URI
-}
-
-var (
-	Sessions     = make(map[int]Session)
-	SessionsLock sync.Mutex
 )
 
 /*
 CreateSession is a handler function that creates a new session.
 It should add the current user to the session and return a session ID.
+
+TODO: get the current user from the context and add them to the session.
 */
 func CreateSession(c echo.Context) error {
-	userClient, err := auth.GetAdmin()
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err.Error())
-	}
-
-	SessionsLock.Lock()
-	defer SessionsLock.Unlock()
-
-	if len(Sessions) > 10 {
-		return c.JSON(http.StatusTooManyRequests, "Too many sessions")
-	}
-	time := unix.Now().Nanosecond()
-
-	if _, ok := Sessions[time]; ok {
-		return c.JSON(http.StatusInternalServerError, "Session with the same ID already exists")
-	}
-	session := Session{
-		ID:      time,
-		AdminID: userClient.Email,
-		UserIDs: []string{userClient.Email},
-	}
-	fmt.Println("Session created with ID:", session.ID)
-	Sessions[time] = session
-	return c.JSON(http.StatusOK, session)
+	return nil
 }
 
 func EndSession(c echo.Context) error {
@@ -63,36 +25,41 @@ func JoinSession(c echo.Context) error {
 }
 
 func GetSessions(c echo.Context) error {
-	sessions := make([]Session, 0)
-	SessionsLock.Lock()
-	defer SessionsLock.Unlock()
-	for _, session := range Sessions {
-		sessions = append(sessions, session)
-
-	}
-	return c.JSON(http.StatusOK, sessions)
+	// TODO : fix
+	return nil
 }
 
 func PlaySong(c echo.Context) error {
-	// songID := "spotify:track:6rqhFgbbKwnb9MLmUQDhG6"
-	songID := c.QueryParam("songID")
-	auth.AdminClientLock.RLock()
-	client := auth.AdminClient
-	defer auth.AdminClientLock.RUnlock()
+	// songID := c.QueryParam("songID")
+	// sessionID, err := strconv.Atoi(c.Param("session_id"))
+	// if err != nil {
+	// 	return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid session ID"})
+	// }
+	// userID := c.QueryParam("user_id")
+	// session, exists := Sessions[sessionID]
+	// if !exists {
+	// 	return c.JSON(http.StatusNotFound, map[string]string{"error": "Session not found"})
+	// }
 
-	if client == nil {
-		return c.JSON(http.StatusForbidden, "Admin not logged in")
-	}
+	// if !isUserInSession(userID, session) {
+	// 	return c.JSON(http.StatusForbidden, map[string]string{"error": "User not in session"})
+	// }
 
-	// check if the song is in the queue
+	// _, err = middleware.EnsureValidToken(session.Admin)
+	// if err != nil {
+	// 	return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Admin authentication failed"})
+	// }
 
-	// play the song
-	err := client.PlayOpt(&spotify.PlayOptions{
-		URIs: []spotify.URI{spotify.URI(songID)},
-	})
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err.Error())
-	}
+	// session.Lock.Lock()
+	// defer session.Lock.Unlock()
+
+	// // play the song
+	// err = session.Admin.Client.PlayOpt(&spotify.PlayOptions{
+	// 	URIs: []spotify.URI{spotify.URI(songID)},
+	// })
+	// if err != nil {
+	// 	return c.JSON(http.StatusInternalServerError, err.Error())
+	// }
 	return c.JSON(http.StatusOK, "Song playing")
 
 }

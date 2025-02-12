@@ -12,5 +12,6 @@ type Session struct {
 	UserIDs    []string
 	SongQueue  []spotify.URI
 	AdminToken string
+	Passcode   string
 	Lock       sync.Mutex
 }

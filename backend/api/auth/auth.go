@@ -54,29 +54,14 @@ func Callback(c echo.Context) error {
 
 	if err != nil {
 		errorMessage := fmt.Sprintf("Couldn't get token: %v", err)
-		htmlContent := fmt.Sprintf(`
-          <html>
-            <head>
-              <script type="text/javascript">
-                window.onload = function() {
-                  window.opener.postMessage({
-                    type: 'spotify-auth-callback',
-                    isSignedIn: false,
-                    error: %q
-                  }, window.location.origin);
-                  window.close();
-                };
-              </script>
-            </head>
-            <body>
-              Authentication failed. Please close this window.
-            </body>
-          </html>
-        `, errorMessage)
-		return c.HTML(http.StatusForbidden, htmlContent)
+		return c.JSON(http.StatusForbidden, errorMessage)
 	}
 
 	client := Auth.NewClient(token)
+	currentUser, err := services.GetUser(c)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
 
 	SessionsLock.Lock()
 	defer SessionsLock.Unlock()
@@ -86,27 +71,13 @@ func Callback(c echo.Context) error {
 		Expiry:       token.Expiry,
 		Client:       &client,
 	}
-	services.CreateSession(c, &spotifyUser, Sessions)
 
-	htmlContent := `
-      <html>
-        <head>
-          <script type="text/javascript">
-            window.onload = function() {
-              window.opener.postMessage({
-                type: 'spotify-auth-callback',
-                isSignedIn: true
-              }, window.location.origin);
-              window.close();
-            };
-          </script>
-        </head>
-        <body>
-          Successfully authenticated. Please close this window and return to the application.
-        </body>
-      </html>
-    `
-	return c.HTML(http.StatusOK, htmlContent)
+	session, err := services.CreateSession(currentUser, &spotifyUser, Sessions)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, session)
 }
 
 // run server

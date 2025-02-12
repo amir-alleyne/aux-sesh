@@ -15,7 +15,7 @@ func CreateSession(currentUser *clerk.User, spotifyAdmin *models.SpotifyUser, gl
 	fmt.Println("Creating session with admin:", spotifyAdmin.ID)
 	// check if the user is already in a session
 	for _, session := range globalSessions {
-		if isUserInSession(currentUser.ID, session) {
+		if IsUserInSession(currentUser.ID, session) {
 			return nil, fmt.Errorf("User is already in a session")
 		}
 	}
@@ -48,10 +48,13 @@ func GetSessions(globalSessions map[int]*models.Session) []*models.Session {
 	return sessions
 }
 
-func JoinSession() {
-
+/*
+Assume locked is aquired
+*/
+func JoinSession(user *clerk.User, globalSessions map[int]*models.Session, sessionID int) error {
+	return nil
 }
-func isUserInSession(userID string, session *models.Session) bool {
+func IsUserInSession(userID string, session *models.Session) bool {
 	for _, id := range session.UserIDs {
 		if id == userID {
 			return true

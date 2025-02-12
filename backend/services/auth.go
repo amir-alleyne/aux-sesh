@@ -26,8 +26,12 @@ func GetUser(c echo.Context) (*clrk.User, error) {
 			}
 			token = cookie.Value
 		}
-	}
+	} else {
+		// Remove the "Bearer " prefix
+		token = token[7:]
 
+	}
+	fmt.Println("token: ", token)
 	// Verify the token with Clerk
 	claims, err := jwt.Verify(c.Request().Context(), &jwt.VerifyParams{
 		Token: token,

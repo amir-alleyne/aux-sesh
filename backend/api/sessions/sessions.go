@@ -1,8 +1,12 @@
 package sessions
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
 
+	"github.com/amir-alleyne/aux-sesh/backend/api/auth"
+	"github.com/amir-alleyne/aux-sesh/backend/services"
 	"github.com/labstack/echo/v4"
 )
 
@@ -21,7 +25,35 @@ func EndSession(c echo.Context) error {
 }
 
 func JoinSession(c echo.Context) error {
-	return nil
+	fmt.Println("Joining session")
+	currentUser, err := services.GetUser(c)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	sessionIDstring := c.QueryParam("sessionID")
+	if sessionIDstring == "" {
+		return c.JSON(http.StatusBadRequest, "Session ID is required")
+	}
+	sessionID, err := strconv.Atoi(sessionIDstring)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, "Invalid session ID")
+	}
+
+	if auth.Sessions[sessionID] == nil {
+		return c.JSON(http.StatusNotFound, "Session not found")
+	}
+	if services.IsUserInSession(currentUser.ID, auth.Sessions[sessionID]) {
+		return c.JSON(http.StatusForbidden, "User already in session")
+	}
+
+	auth.SessionsLock.Lock()
+	defer auth.SessionsLock.Unlock()
+
+	err = services.JoinSession(currentUser, auth.Sessions, sessionID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(http.StatusOK, "Joined session")
 }
 
 func GetSessions(c echo.Context) error {

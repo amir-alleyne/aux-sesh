@@ -7,6 +7,7 @@ import (
 
 	"github.com/amir-alleyne/aux-sesh/backend/models"
 	"github.com/clerk/clerk-sdk-go/v2"
+	"github.com/zmb3/spotify"
 )
 
 /* Assume locked is aquired */
@@ -29,10 +30,12 @@ func CreateSession(currentUser *clerk.User, spotifyAdmin *models.SpotifyUser, gl
 	}
 
 	session := models.Session{
-		ID:      time,
-		Admin:   spotifyAdmin,
-		UserIDs: []string{spotifyAdmin.ID},
-		Lock:    sync.Mutex{},
+		ID:         time,
+		Admin:      spotifyAdmin,
+		AdminToken: spotifyAdmin.AccessToken,
+		UserIDs:    []string{currentUser.ID},
+		SongQueue:  []spotify.URI{},
+		Lock:       sync.Mutex{},
 	}
 	fmt.Println("Session created with ID:", session.ID)
 	globalSessions[time] = &session
@@ -54,6 +57,15 @@ Assume locked is aquired
 func JoinSession(user *clerk.User, globalSessions map[int]*models.Session, sessionID int) error {
 	return nil
 }
+
+/*
+Assumes lock is acquired.
+*/
+func AddSongToQueue(session *models.Session, songID spotify.ID) error {
+	err := session.Admin.Client.QueueSong(songID)
+	return err
+}
+
 func IsUserInSession(userID string, session *models.Session) bool {
 	for _, id := range session.UserIDs {
 		if id == userID {

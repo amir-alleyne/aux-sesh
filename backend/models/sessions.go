@@ -15,3 +15,8 @@ type Session struct {
 	Passcode   string
 	Lock       sync.Mutex
 }
+
+type QueueSongRequest struct {
+	SessionID int    `json:"session_id"`
+	SongID    string `json:"song_id"`
+}

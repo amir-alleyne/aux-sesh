@@ -1,13 +1,14 @@
 package sessions
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/amir-alleyne/aux-sesh/backend/api/auth"
+	"github.com/amir-alleyne/aux-sesh/backend/models"
 	"github.com/amir-alleyne/aux-sesh/backend/services"
 	"github.com/labstack/echo/v4"
+	"github.com/zmb3/spotify"
 )
 
 /*
@@ -25,7 +26,6 @@ func EndSession(c echo.Context) error {
 }
 
 func JoinSession(c echo.Context) error {
-	fmt.Println("Joining session")
 	currentUser, err := services.GetUser(c)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
@@ -61,6 +61,41 @@ func GetSessions(c echo.Context) error {
 	return nil
 }
 
+/*
+AddSongToQueue is a handler function that adds a song to the queue of the current session.
+It should return an error if the song could not be added.
+*/
+func AddSongToQueue(c echo.Context) error {
+	user, err := services.GetUser(c)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	var queueSongRequest models.QueueSongRequest
+	if err := c.Bind(&queueSongRequest); err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	sessionID := queueSongRequest.SessionID
+	songID := queueSongRequest.SongID
+
+	auth.SessionsLock.Lock()
+	session, exists := auth.Sessions[sessionID]
+	auth.SessionsLock.Unlock()
+	if !exists {
+		return c.JSON(http.StatusNotFound, "Session not found")
+	}
+
+	if !services.IsUserInSession(user.ID, session) {
+		return c.JSON(http.StatusForbidden, "User not in session")
+	}
+
+	session.Lock.Lock()
+	defer session.Lock.Unlock()
+
+	services.AddSongToQueue(session, spotify.ID(songID))
+
+	return c.JSON(http.StatusOK, "Song added to queue")
+}
 func PlaySong(c echo.Context) error {
 	// songID := c.QueryParam("songID")
 	// sessionID, err := strconv.Atoi(c.Param("session_id"))

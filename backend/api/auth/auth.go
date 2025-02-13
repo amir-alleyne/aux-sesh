@@ -6,6 +6,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/amir-alleyne/aux-sesh/backend/middleware"
 	"github.com/amir-alleyne/aux-sesh/backend/models"
 	"github.com/amir-alleyne/aux-sesh/backend/services"
 	"github.com/clerkinc/clerk-sdk-go/clerk"
@@ -59,6 +60,10 @@ func Callback(c echo.Context) error {
 
 	client := Auth.NewClient(token)
 	currentUser, err := services.GetUser(c)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	err = middleware.AddSpotifyTokenToMetaData(c, currentUser.ID, token.AccessToken)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}

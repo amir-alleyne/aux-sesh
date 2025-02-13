@@ -90,7 +90,7 @@ func AddSongToQueue(c echo.Context) error {
 	if !services.IsUserInSession(user.ID, session) {
 		return c.JSON(http.StatusForbidden, "User not in session")
 	}
-	_, err = middleware.EnsureValidToken(session.Admin)
+	err = middleware.ValidateAndUpdateToken(c, user.ID, session.Admin)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, fmt.Sprintf("Admin refrsh token failed : %v", err))
 	}

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	clerku "github.com/clerk/clerk-sdk-go/v2/user"
+
 	"github.com/zmb3/spotify"
 
 	"github.com/amir-alleyne/aux-sesh/backend/models"
@@ -34,14 +36,30 @@ func GetUserFromContext(c echo.Context) (*spotify.PrivateUser, error) {
 	return userClient, nil
 }
 
-func EnsureValidToken(user *models.SpotifyUser) (string, error) {
+func ValidateAndUpdateToken(c echo.Context, clerkID string, user *models.SpotifyUser) error {
+	accessToken, refreshed, err := EnsureValidToken(user)
+	if err != nil {
+		return fmt.Errorf("failed to validate token: %v", err)
+	}
+	if refreshed {
+		err = AddSpotifyTokenToMetaData(c, clerkID, accessToken)
+		if err != nil {
+			return fmt.Errorf("failed to update token in metadata: %v", err)
+		}
+	}
+	return nil
+}
+
+func EnsureValidToken(user *models.SpotifyUser) (string, bool, error) {
+	var refreshed = false
 	if time.Now().After(user.Expiry) {
 		err := RefreshToken(user)
 		if err != nil {
-			return "", fmt.Errorf("failed to refresh token: %v", err)
+			return "", false, fmt.Errorf("failed to refresh token: %v", err)
 		}
+		refreshed = true
 	}
-	return user.AccessToken, nil
+	return user.AccessToken, refreshed, nil
 }
 
 func RefreshToken(user *models.SpotifyUser) error {
@@ -71,5 +89,37 @@ func RefreshToken(user *models.SpotifyUser) error {
 		user.Expiry = time.Now().Add(time.Hour) // Update expiry
 	}
 
+	// TODO : add token to meta data
+
+	return nil
+}
+
+func AddSpotifyTokenToMetaData(ctx echo.Context, userID, spotifyToken string) error {
+	// Define the update parameters with the new public metadata.
+	publicMetadata := map[string]interface{}{
+		"spotify_token": spotifyToken,
+	}
+
+	// Marshal the map to JSON
+	publicMetadataJSON, err := json.Marshal(publicMetadata)
+	if err != nil {
+		return err
+	}
+
+	// Convert JSON to json.RawMessage
+	rawMessage := json.RawMessage(publicMetadataJSON)
+
+	// Create the UpdateMetadataParams with the RawMessage
+	metaData := &clerku.UpdateParams{
+		PublicMetadata: &rawMessage,
+	}
+
+	// Call Clerk's Update function to update the user's metadata.
+	updatedUser, err := clerku.Update(ctx.Request().Context(), userID, metaData)
+	if err != nil {
+		return fmt.Errorf("failed to update user metadata: %w", err)
+	}
+
+	fmt.Printf("Updated user: %v\n", updatedUser)
 	return nil
 }

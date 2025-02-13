@@ -1,10 +1,12 @@
 package sessions
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/amir-alleyne/aux-sesh/backend/api/auth"
+	"github.com/amir-alleyne/aux-sesh/backend/middleware"
 	"github.com/amir-alleyne/aux-sesh/backend/models"
 	"github.com/amir-alleyne/aux-sesh/backend/services"
 	"github.com/labstack/echo/v4"
@@ -87,6 +89,10 @@ func AddSongToQueue(c echo.Context) error {
 
 	if !services.IsUserInSession(user.ID, session) {
 		return c.JSON(http.StatusForbidden, "User not in session")
+	}
+	_, err = middleware.EnsureValidToken(session.Admin)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, fmt.Sprintf("Admin refrsh token failed : %v", err))
 	}
 
 	session.Lock.Lock()

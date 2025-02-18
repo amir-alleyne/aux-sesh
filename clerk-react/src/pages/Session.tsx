@@ -2,7 +2,8 @@ import { Input } from "@mui/material";
 import { useEffect, useState } from "react";
 import SpotifyWebApi from "spotify-web-api-node"
 import TrackSearchResult, { Track } from "./TrackSearchResult";
-
+import { useQueueSong } from "../hooks/useQueueSong";
+import { Button } from "antd";
 
 const spotifyApi = new SpotifyWebApi({
     clientId: import.meta.env.VITE_SPOTIFY_CLIENT_ID,
@@ -11,6 +12,17 @@ const spotifyApi = new SpotifyWebApi({
 export function Session({token}: {token: string}) {
     const [searchResults, setSearchResults] = useState<any>([])
     const [search, setSearch] = useState<string>("");
+    const { status, loading: queueLoading, error: queueError, queueSongWithParams } = useQueueSong();
+    const handleQueueSong = async () => {
+      try {
+        if (token) {
+           await queueSongWithParams({song_id: "6rqhFgbbKwnb9MLmUQDhG6", session_id: '1739408337', token: token as string});
+        }
+    } catch (err) {
+        console.error('Queue song failed', err);
+    }
+    };
+    
  
 
     useEffect(() => {
@@ -50,6 +62,9 @@ export function Session({token}: {token: string}) {
     return (
         <>
         <div>
+        <div>
+        <Button variant="outlined" onClick={handleQueueSong}>Queue Song</Button>
+      </div>
         <Input placeholder="Search for a song" onChange={(e) => {
             setSearch(e.target.value)
         }}/>

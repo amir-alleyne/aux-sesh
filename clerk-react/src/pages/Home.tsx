@@ -1,16 +1,26 @@
 import { UserButton, useAuth, useUser } from "@clerk/clerk-react";
-import Button from '@mui/material/Button';
 import { useSpotifySignIn } from "../hooks/useSpotifySignIn";
 import { useCreateSession } from "../hooks/useCreateSession";
-import { useQueueSong } from "../hooks/useQueueSong";
 import { useEffect, useState } from "react";
 import { Session } from "./Session";
+import GenModal from "../components/modal";
+import { Button, Input } from "antd";
+import { useJoinSession } from "../hooks/useJoinSession";
+import { useLeaveSession } from "../hooks/useLeaveSession";
+
+
 
 function Home() {
-
+  const [openCreateSession, setOpenCreateSession] = useState<boolean>(false);
+  const [openJoinSession, setOpenJoinSession] = useState<boolean>(false);
+  const [sessionCreated, setSessionCreated] = useState<boolean>(false);
+  const [sessionId, setSessionId] = useState<number>(0);
+  const [openLeaveSession, setOpenLeaveSession] = useState<boolean>(false);
   const { response, loading: signInLoading, error:signInError, signInWithSpotify } = useSpotifySignIn();
-  const { session, loading: sessionLoading, error: sessionError, createAuxSession } = useCreateSession();
-  const { status, loading: queueLoading, error: queueError, queueSongWithParams } = useQueueSong();
+  const { joinResponse , loading: isJoining, error: joinError, joinAuxSession } =  useJoinSession();
+  const { leaveResponse , loading: isLeaving, error: leaveError, leaveAuxSession } =  useLeaveSession();
+
+  // const { session, loading: sessionLoading, error: sessionError, createAuxSession } = useCreateSession();
   const { isSignedIn, user, isLoaded } = useUser();
   useEffect(() => {
     if (user?.publicMetadata['spotify_token']) {
@@ -23,7 +33,11 @@ function Home() {
   const [token, setToken] = useState<String | null>(null);
 
   useEffect(() => {
-    console.log(token);
+    const fetchToken = async () => {
+      const token = await getToken();
+      setToken(token);
+    }
+    fetchToken();
   }
   , [token]);
 
@@ -32,66 +46,101 @@ function Home() {
       console.log('Sign In with Spotify'); 
       try {
           await signInWithSpotify();
-          setToken(await getToken());
+          
+          // setToken(await getToken());
       } catch (err) {
           console.error('Sign In failed:', err);
       }
       };
 
-  const handleCreateSession = async () => {
-      try {
-          await createAuxSession();
-      } catch (err) {
-          console.error('Create Session failed:', err);
-      }
+  const handleJoinSession = async (sessionId: number) => {
+      
+        try {
+            await joinAuxSession(sessionId, token as string);
+            setOpenJoinSession(false);
+        } catch (err) {
+            console.error('Create Session failed:', err);
+        }
+        }
+  const handleLeaveSession = async (sessionId: number) => {
+      
+        try {
+            await leaveAuxSession(sessionId, token as string);
+            setOpenLeaveSession(false);
+        } catch (err) {
+            console.error('Create Session failed:', err);
+        }
+  }
+  const handleCreateSession = () => {
+    
+      // try {
+      //     await createAuxSession();
+      // } catch (err) {
+      //     console.error('Create Session failed:', err);
+      // }
       }
 
-    const handleQueueSong = async () => {
-      try {
-        if (token) {
-           await queueSongWithParams({song_id: "6rqhFgbbKwnb9MLmUQDhG6", session_id: '1739408337', token: token as string});
-        }
-    } catch (err) {
-        console.error('Queue song failed', err);
-    }
-    };
-    
+ 
   return (
     <>
+      
       <div>
-      <Button variant="outlined" onClick={handleSpotifySignIn}>Sign In With Spotify</Button>
+        <Button variant="outlined" onClick={() => {
+          setOpenCreateSession(true);
+        }}>Create Session</Button>
       </div>
+      {openCreateSession && <div>
+        <GenModal title="Create Session" open={openCreateSession} onClose={() => setOpenCreateSession(false)}>
+          <div>
+            {sessionCreated ?  
+            <p>Session Created</p>
+
+            :
+            <Button variant="outlined" onClick={handleSpotifySignIn}>Sign In With Spotify</Button>
+            }
+            
+          </div>
+        </GenModal>
+      </div>}
+
       <div>
-        {signInLoading && <p>Loading...</p>}
-        {signInError && <p>{signInError.message}</p>}
-        {response && <p>{response.isSignedIn}</p>}
+        <Button variant="outlined" onClick={() => {
+          setOpenJoinSession(true);
+        }}>Join Session</Button>
       </div>
+      {openJoinSession && <div>
+        <GenModal title="Join Session" open={openJoinSession} onClose={() => setOpenJoinSession(false)} onOk={() => handleJoinSession(sessionId)}>
+          <div>
+            <Input type="number" placeholder="Enter Session ID" onChange={(e) => { setSessionId(Number(e.target.value))}} />
+            
+          </div>
+        </GenModal>
+      </div>}
+
       <div>
-        <Button variant="outlined" onClick={handleCreateSession}>Create Session</Button>
+        <Button variant="outlined" onClick={() => {
+          setOpenLeaveSession(true);
+        }}>Leave Session</Button>
       </div>
-      <div>
-        {sessionLoading && <p>Loading...</p>}
-        {sessionError && <p>{sessionError.message}</p>}
-        {session && <p>{session.ID}</p>}
-      </div>
-      <div>
-        <Button variant="outlined" onClick={handleQueueSong}>Queue Song</Button>
-      </div>
-      <div>
-        {queueLoading && <p>Loading...</p>}
-        {queueError && <p>{queueError.message}</p>}
-        {status && <p>{status.Status}</p>}
-      </div>
+      {openLeaveSession && <div>
+        <GenModal title="Leave Session" open={openLeaveSession} onClose={() => setOpenLeaveSession(false)} onOk={() => handleLeaveSession(sessionId)}>
+          <div>
+            <Input type="number" placeholder="Enter Session ID" onChange={(e) => { setSessionId(Number(e.target.value))}} />
+            
+          </div>
+        </GenModal>
+      </div>}
+  
+     
+      
       {token && <div>
         <Session token={token as string}/>
       </div>}
       
-      <div>
-        <UserButton />
-      </div>
+    
     </>
   
   );
 }
 
-export default Home;    
+export default Home;

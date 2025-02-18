@@ -12,8 +12,6 @@ import (
 
 /* Assume locked is aquired */
 func CreateSession(currentUser *clerk.User, spotifyAdmin *models.SpotifyUser, globalSessions map[int]*models.Session) (*models.Session, error) {
-
-	fmt.Println("Creating session with admin:", spotifyAdmin.ID)
 	// check if the user is already in a session
 	for _, session := range globalSessions {
 		if IsUserInSession(currentUser.ID, session) {
@@ -55,7 +53,28 @@ func GetSessions(globalSessions map[int]*models.Session) []*models.Session {
 Assume locked is aquired
 */
 func JoinSession(user *clerk.User, globalSessions map[int]*models.Session, sessionID int) error {
+	if globalSessions[sessionID] == nil {
+		return fmt.Errorf("Session not found")
+	}
+	if IsUserInSession(user.ID, globalSessions[sessionID]) {
+		return fmt.Errorf("User already in session")
+	}
+	globalSessions[sessionID].UserIDs = append(globalSessions[sessionID].UserIDs, user.ID)
 	return nil
+}
+
+/*
+Assume locked is aquired
+*/
+func LeaveSession(user *clerk.User, globalSessions map[int]*models.Session, sessionID int) error {
+	for index, u := range globalSessions[sessionID].UserIDs {
+		if user.ID == u {
+			globalSessions[sessionID].UserIDs[index] = globalSessions[sessionID].UserIDs[len(globalSessions[sessionID].UserIDs)-1]
+			globalSessions[sessionID].UserIDs = globalSessions[sessionID].UserIDs[:len(globalSessions[sessionID].UserIDs)-1]
+			return nil
+		}
+	}
+	return fmt.Errorf("User not in session")
 }
 
 /*

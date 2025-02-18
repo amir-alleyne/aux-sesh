@@ -20,3 +20,7 @@ type QueueSongRequest struct {
 	SessionID int    `json:"session_id"`
 	SongID    string `json:"song_id"`
 }
+
+type JoinSessionRequest struct {
+	SessionID int `json:"session_id"`
+}

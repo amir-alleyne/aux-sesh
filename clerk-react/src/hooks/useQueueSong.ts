@@ -2,6 +2,7 @@ import { useApi } from './useApi';
 import { useCallback } from 'react';
 import { QueueSongParams, QueueSongResponse, queueSong } from '../api/sessions';
 
+
 export function useQueueSong() {
   // The generic hook infers the types for data and arguments.
   const { data, loading, error, callApi } = useApi<QueueSongResponse, [QueueSongParams]>(queueSong);

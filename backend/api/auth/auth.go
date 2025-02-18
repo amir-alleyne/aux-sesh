@@ -59,7 +59,7 @@ func Callback(c echo.Context) error {
 	}
 
 	client := Auth.NewClient(token)
-	currentUser, err := services.GetUser(c)
+	currentUser, err := services.GetUser(c, false)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
@@ -75,6 +75,7 @@ func Callback(c echo.Context) error {
 		RefreshToken: token.RefreshToken,
 		Expiry:       token.Expiry,
 		Client:       &client,
+		ID:           currentUser.ID,
 	}
 
 	session, err := services.CreateSession(currentUser, &spotifyUser, Sessions)

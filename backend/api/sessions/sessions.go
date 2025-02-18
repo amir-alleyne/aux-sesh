@@ -3,7 +3,6 @@ package sessions
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/amir-alleyne/aux-sesh/backend/api/auth"
 	"github.com/amir-alleyne/aux-sesh/backend/middleware"
@@ -28,34 +27,60 @@ func EndSession(c echo.Context) error {
 }
 
 func JoinSession(c echo.Context) error {
-	currentUser, err := services.GetUser(c)
+	currentUser, err := services.GetUser(c, true)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
-	sessionIDstring := c.QueryParam("sessionID")
-	if sessionIDstring == "" {
-		return c.JSON(http.StatusBadRequest, "Session ID is required")
-	}
-	sessionID, err := strconv.Atoi(sessionIDstring)
+	var joinSessionRequest models.JoinSessionRequest
+	err = c.Bind(&joinSessionRequest)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, "Invalid session ID")
+		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	if auth.Sessions[sessionID] == nil {
+	if auth.Sessions[joinSessionRequest.SessionID] == nil {
 		return c.JSON(http.StatusNotFound, "Session not found")
-	}
-	if services.IsUserInSession(currentUser.ID, auth.Sessions[sessionID]) {
-		return c.JSON(http.StatusForbidden, "User already in session")
 	}
 
 	auth.SessionsLock.Lock()
 	defer auth.SessionsLock.Unlock()
 
-	err = services.JoinSession(currentUser, auth.Sessions, sessionID)
+	err = services.JoinSession(currentUser, auth.Sessions, joinSessionRequest.SessionID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 	return c.JSON(http.StatusOK, "Joined session")
+}
+
+/*
+	LeaveSession is a handler function that removes the current user from a session.
+
+It should return an error if the user could not be removed.
+
+x
+*/
+func LeaveSession(c echo.Context) error {
+	currentUser, err := services.GetUser(c, true)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	var leaveSessionRequest models.JoinSessionRequest
+	err = c.Bind(&leaveSessionRequest)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	if auth.Sessions[leaveSessionRequest.SessionID] == nil {
+		return c.JSON(http.StatusNotFound, "Session not found")
+	}
+
+	auth.SessionsLock.Lock()
+	defer auth.SessionsLock.Unlock()
+
+	err = services.LeaveSession(currentUser, auth.Sessions, leaveSessionRequest.SessionID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(http.StatusOK, "Left session")
 }
 
 func GetSessions(c echo.Context) error {
@@ -68,7 +93,7 @@ AddSongToQueue is a handler function that adds a song to the queue of the curren
 It should return an error if the song could not be added.
 */
 func AddSongToQueue(c echo.Context) error {
-	user, err := services.GetUser(c)
+	user, err := services.GetUser(c, true)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
@@ -102,6 +127,7 @@ func AddSongToQueue(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, "Song added to queue")
 }
+
 func PlaySong(c echo.Context) error {
 	// songID := c.QueryParam("songID")
 	// sessionID, err := strconv.Atoi(c.Param("session_id"))

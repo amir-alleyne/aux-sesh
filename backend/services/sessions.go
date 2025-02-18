@@ -52,26 +52,25 @@ func GetSessions(globalSessions map[int]*models.Session) []*models.Session {
 /*
 Assume locked is aquired
 */
-func JoinSession(user *clerk.User, globalSessions map[int]*models.Session, sessionID int) error {
-	if globalSessions[sessionID] == nil {
-		return fmt.Errorf("Session not found")
-	}
-	if IsUserInSession(user.ID, globalSessions[sessionID]) {
+func JoinSession(user *clerk.User, session *models.Session) error {
+
+	if IsUserInSession(user.ID, session) {
 		return fmt.Errorf("User already in session")
 	}
-	globalSessions[sessionID].UserIDs = append(globalSessions[sessionID].UserIDs, user.ID)
+	session.UserIDs = append(session.UserIDs, user.ID)
 	return nil
 }
 
 /*
 Assume locked is aquired
 */
-func LeaveSession(user *clerk.User, globalSessions map[int]*models.Session, sessionID int) error {
-	for index, u := range globalSessions[sessionID].UserIDs {
-		if user.ID == u {
-			globalSessions[sessionID].UserIDs[index] = globalSessions[sessionID].UserIDs[len(globalSessions[sessionID].UserIDs)-1]
-			globalSessions[sessionID].UserIDs = globalSessions[sessionID].UserIDs[:len(globalSessions[sessionID].UserIDs)-1]
-			return nil
+func LeaveSession(user *clerk.User, globalSessions map[int]*models.Session, session *models.Session) error {
+	if IsUserInSession(user.ID, session) {
+		for i, id := range session.UserIDs {
+			if id == user.ID {
+				session.UserIDs = append(session.UserIDs[:i], session.UserIDs[i+1:]...)
+				return nil
+			}
 		}
 	}
 	return fmt.Errorf("User not in session")

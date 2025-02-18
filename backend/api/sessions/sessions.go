@@ -43,8 +43,13 @@ func JoinSession(c echo.Context) error {
 
 	auth.SessionsLock.Lock()
 	defer auth.SessionsLock.Unlock()
+	session := auth.Sessions[joinSessionRequest.SessionID]
+	err = middleware.ValidateAndUpdateToken(c, currentUser.ID, session.Admin)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, fmt.Sprintf("Admin refrsh token failed : %v", err))
+	}
 
-	err = services.JoinSession(currentUser, auth.Sessions, joinSessionRequest.SessionID)
+	err = services.JoinSession(currentUser, session)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
@@ -75,8 +80,9 @@ func LeaveSession(c echo.Context) error {
 
 	auth.SessionsLock.Lock()
 	defer auth.SessionsLock.Unlock()
+	session := auth.Sessions[leaveSessionRequest.SessionID]
 
-	err = services.LeaveSession(currentUser, auth.Sessions, leaveSessionRequest.SessionID)
+	err = services.LeaveSession(currentUser, auth.Sessions, session)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}

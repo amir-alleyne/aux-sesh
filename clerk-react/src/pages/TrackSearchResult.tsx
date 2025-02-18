@@ -1,3 +1,5 @@
+import {Card} from 'antd';
+
 export type Track = {
     id: string;
     title: string;
@@ -12,13 +14,14 @@ export type Track = {
 function TrackSearchResult({ track }: { track: Track}) {
 
     return (
-        <div>
+        <Card>
           <img src={track.albumUrl} style={{ height: "64px", width: "64px" }} />
           <div className="ml-3">
             <div>{track.title}</div>
             <div className="text-muted">{track.artist}</div>
           </div>
-        </div>
+        </Card>
+         
       )
 }
 

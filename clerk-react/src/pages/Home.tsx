@@ -1,8 +1,6 @@
-import { UserButton, useAuth, useUser } from "@clerk/clerk-react";
+import { UserButton, useAuth } from "@clerk/clerk-react";
 import { useSpotifySignIn } from "../hooks/useSpotifySignIn";
-import { useCreateSession } from "../hooks/useCreateSession";
 import { useEffect, useState } from "react";
-import { Session } from "./Session";
 import GenModal from "../components/modal";
 import { Button, Input } from "antd";
 import { useJoinSession } from "../hooks/useJoinSession";
@@ -21,14 +19,7 @@ function Home() {
   const { leaveResponse , loading: isLeaving, error: leaveError, leaveAuxSession } =  useLeaveSession();
 
   // const { session, loading: sessionLoading, error: sessionError, createAuxSession } = useCreateSession();
-  const { isSignedIn, user, isLoaded } = useUser();
-  useEffect(() => {
-    if (user?.publicMetadata['spotify_token']) {
-        var stringToken = user?.publicMetadata['spotify_token'] as string
-        setToken(stringToken)
-    }
-}
-, [user]);
+ 
   const {getToken} = useAuth();
   const [token, setToken] = useState<String | null>(null);
 
@@ -132,10 +123,7 @@ function Home() {
       </div>}
   
      
-      
-      {token && <div>
-        <Session token={token as string}/>
-      </div>}
+
       
     
     </>
